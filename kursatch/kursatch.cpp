@@ -9,20 +9,35 @@
 namespace fs = std::filesystem;
 HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 COORD coord;
+CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+std::string destinationPath = "C:\\";
+std::string CoppyPath;
 
-void displayPath(const std::string& title, const fs::path& path) {
+void displayPath(const std::string& title, const fs::path& path, int count) {
     std::cout << "\033[0m";
-    system("cls");
+    coord.X = 0;
+    coord.Y = 0;
+    SetConsoleCursorPosition(hConsole, coord);
+    //CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleInfo);
+    int columns = consoleInfo.srWindow.Right - consoleInfo.srWindow.Left + 1;
+    for (int i = 0; i < count+1; i++)
+    {
+        std::cout << std::string(columns, ' ') << std::endl;
+    }
+    SetConsoleCursorPosition(hConsole, coord);
+    
+    //system("cls");
     std::cout << title << ": " << path << std::endl;
 }
 
-void filling() {
-
-}
+//void filling() {
+//
+//}
 //
 //void checkWindowSize() {
 //    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-//    DWORD mode = 0;
+//    DWORD mode = 0;   
 //    GetConsoleMode(hStdin, &mode);
 //    SetConsoleMode(hStdin, mode | ENABLE_WINDOW_INPUT);
 //
@@ -39,42 +54,91 @@ void filling() {
 //    }
 //}
 
+void insert(const char* sourcePath, const char* destinationPath) {
+    try {
+        std::ifstream sourceFile(sourcePath, std::ios::binary);
+        std::ofstream destinationFile(destinationPath, std::ios::binary);
 
-void copyFile(const char* sourcePath, const char* destinationPath) {
-    std::ifstream sourceFile(sourcePath, std::ios::binary);
-    std::ofstream destinationFile(destinationPath, std::ios::binary);
+        if (!sourceFile.is_open() || !destinationFile.is_open()) {
+            throw std::runtime_error("Unable to open files!");
+        }
 
-    if (!sourceFile.is_open() || !destinationFile.is_open()) {
-        std::cerr << "Unable to open files!" << std::endl;
-        return;
+        // Установка указателя чтения в начало файла
+        sourceFile.seekg(0, std::ios::beg);
+
+        // Получение размера файла
+        sourceFile.seekg(0, std::ios::end);
+        std::streampos fileSize = sourceFile.tellg();
+        sourceFile.seekg(0, std::ios::beg);
+
+        // Выделение буфера для копирования данных
+        char* buffer = new (std::nothrow) char[fileSize];
+        if (!buffer) {
+            throw std::runtime_error("Memory allocation failed!");
+        }
+
+        // Чтение данных из исходного файла
+        sourceFile.read(buffer, fileSize);
+        if (sourceFile.gcount() != fileSize) {
+            throw std::runtime_error("Error reading from source file!");
+        }
+
+        // Запись данных в целевой файл
+        destinationFile.write(buffer, fileSize);
+        if (!destinationFile) {
+            throw std::runtime_error("Error writing to destination file!");
+        }
+
+        // Освобождение буфера
+        delete[] buffer;
+
+        // Закрытие файлов
+        sourceFile.close();
+        destinationFile.close();
+
+        std::cout << "File copied successfully!" << std::endl;
     }
-
-    // Установка указателя чтения в начало файла
-    sourceFile.seekg(0, std::ios::beg);
-
-    // Получение размера файла
-    sourceFile.seekg(0, std::ios::end);
-    std::streampos fileSize = sourceFile.tellg();
-    sourceFile.seekg(0, std::ios::beg);
-
-    // Выделение буфера для копирования данных
-    char* buffer = new char[fileSize];
-
-    // Чтение данных из исходного файла
-    sourceFile.read(buffer, fileSize);
-
-    // Запись данных в целевой файл
-    destinationFile.write(buffer, fileSize);
-
-    // Освобождение буфера
-    delete[] buffer;
-
-    // Закрытие файлов
-    sourceFile.close();
-    destinationFile.close();
-
-    std::cout << "File copied successfully!" << std::endl;
+    catch (const std::exception& e) {
+        std::cerr << "Exception caught: " << e.what() << std::endl;
+    }
 }
+
+
+//void copyFile(const char* sourcePath, const char* destinationPath) {
+//    std::ifstream sourceFile(sourcePath, std::ios::binary);
+//    std::ofstream destinationFile(destinationPath, std::ios::binary);
+//
+//    if (!sourceFile.is_open() || !destinationFile.is_open()) {
+//        std::cerr << "Unable to open files!" << std::endl;
+//        return;
+//    }
+//
+//    // Установка указателя чтения в начало файла
+//    sourceFile.seekg(0, std::ios::beg);
+//
+//    // Получение размера файла
+//    sourceFile.seekg(0, std::ios::end);
+//    std::streampos fileSize = sourceFile.tellg();
+//    sourceFile.seekg(0, std::ios::beg);
+//
+//    // Выделение буфера для копирования данных
+//    char* buffer = new char[fileSize];
+//
+//    // Чтение данных из исходного файла
+//    sourceFile.read(buffer, fileSize);
+//
+//    // Запись данных в целевой файл
+//    destinationFile.write(buffer, fileSize);
+//
+//    // Освобождение буфера
+//    delete[] buffer;
+//
+//    // Закрытие файлов
+//    sourceFile.close();
+//    destinationFile.close();
+//
+//    std::cout << "File copied successfully!" << std::endl;
+//}
 
 class FileObject
 {
@@ -150,9 +214,9 @@ void FileObject::disp() {
     coord.X = 0;
     coord.Y = index+1;
     SetConsoleCursorPosition(hConsole, coord);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    int columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    //CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleInfo);
+    int columns = consoleInfo.srWindow.Right - consoleInfo.srWindow.Left + 1;
     std::cout << std::string(columns, ' ');
     SetConsoleCursorPosition(hConsole, coord);
     std::cout << out << std::endl;
@@ -186,6 +250,20 @@ std::vector<FileObject> get_objects(std::string _patch) {
 }
 
 
+void copy(std::string _CoppyPath) {
+    if (CoppyPath != _CoppyPath) {
+        CoppyPath = _CoppyPath;
+        hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
+        coord.X = consoleInfo.dwCursorPosition.X;
+        coord.Y = consoleInfo.dwSize.Y - 1;
+        SetConsoleCursorPosition(hConsole, coord);
+
+        std::cout << "------Скопированно------" << _CoppyPath 
+            << std::string((consoleInfo.srWindow.Right - consoleInfo.srWindow.Left + 1) - 24 - _CoppyPath.size(), ' ');
+    }
+}
+
 
 
 int main() {
@@ -196,10 +274,9 @@ int main() {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
     //std::string sourcePath = "C:/"; // Устанавливаем начальный путь как C:/
-    std::string destinationPath = "C:\\";
-    std::string CoppyPath;
+    
     //std::string dispout;
-    displayPath("Destination", destinationPath);
+    displayPath("Destination", destinationPath,0);
 
     int selectedFolderIndex = 0; // Индекс выбранной папки
 
@@ -307,13 +384,17 @@ int main() {
         case 13: // Enter
             
             if (folders[selectedFolderIndex].name == "..") {
-                displayPath("Destination", destinationPath);
+                displayPath("Destination", fs::path(destinationPath).parent_path().string(), folders.size());
+                destinationPath = fs::path(destinationPath).parent_path().string();
+                folders = get_objects(destinationPath);
                 for (auto& folder : folders) {
                     folder.disp();
                 }
             }
             else if(!fs::is_directory(destinationPath / folders[selectedFolderIndex].name)) {
-                folders = get_objects(destinationPath);
+                //folders = get_objects(destinationPath);
+                copy((fs::path(destinationPath) / folders[selectedFolderIndex].name).string());
+                //CoppyPath = (fs::path(destinationPath) / folders[selectedFolderIndex].name).string();
                 /*CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
                 GetConsoleScreenBufferInfo(hConsole, &bufferInfo);
                 coord.X = bufferInfo.dwSize.X - 1;
@@ -329,7 +410,9 @@ int main() {
                 break;*/
             }
             else {
+                displayPath("Destination", (fs::path(destinationPath) / folders[selectedFolderIndex].name).string(), folders.size());
                 destinationPath = (fs::path(destinationPath) / folders[selectedFolderIndex].name).string();
+                selectedFolderIndex = 0;
                 folders = get_objects(destinationPath);
                 for (auto& folder : folders) {
                     folder.disp();
@@ -372,24 +455,22 @@ int main() {
         //    
 
             break;
-        //case 'c': // Стрелка вниз
-        //    /*displayPath("Destination", destinationPath);
-        //    filling();*/
-        //    if (folders[selectedFolderIndex] != "..") {
-        //        CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
-        //        GetConsoleScreenBufferInfo(hConsole, &bufferInfo);
-        //        coord.X = bufferInfo.dwSize.X - 1;
-        //        coord.Y = bufferInfo.dwSize.Y - 2;
-        //        SetConsoleCursorPosition(hConsole, coord);
-
-        //        CoppyPath = (fs::path(destinationPath) / folders[selectedFolderIndex]).string();
-        //        std::cout << "\n" << "\033[1;34;47m" << "------Скопированно------" << folders[selectedFolderIndex];
-
-        //        coord.X = 8;
-        //        coord.Y = selectedFolderIndex + 1;
-        //        SetConsoleCursorPosition(hConsole, coord);
-        //    }
-        //    break;
+        case 'c': // копировать
+        case 'C': // копировать
+        case 'с': // копировать
+        case 'С': // копировать
+            if (folders[selectedFolderIndex].name != "..") {
+                copy((fs::path(destinationPath) / folders[selectedFolderIndex].name).string());
+            }
+            break;
+        case 'v': //  вставить
+        case 'V': //  вставить
+        case 'м': //  вставить
+        case 'М': //  вставить
+            //if (folders[selectedFolderIndex].name != "..") {
+                insert(CoppyPath.c_str(), (fs::path(destinationPath)).string().c_str());
+            //}
+            break;
         case 'q': // Для выхода из программы
             return 0;
         default:

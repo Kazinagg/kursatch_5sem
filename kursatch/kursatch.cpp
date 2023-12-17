@@ -13,7 +13,7 @@ CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
 std::string destinationPath = "C:\\";
 std::string CoppyPath;
 
-void displayPath(const std::string& title, const fs::path& path, int count) {
+void displayPath(const std::string& title, const std::string& path, int count) {
     std::cout << "\033[0m";
     coord.X = 0;
     coord.Y = 0;
@@ -54,53 +54,153 @@ void displayPath(const std::string& title, const fs::path& path, int count) {
 //    }
 //}
 
-void insert(const char* sourcePath, const char* destinationPath) {
-    try {
-        std::ifstream sourceFile(sourcePath, std::ios::binary);
-        std::ofstream destinationFile(destinationPath, std::ios::binary);
+void insert(std::string sourcePath, std::string _destinationPath) {
+    //std::filesystem::path destinationPath = _destinationPath / "/";
+    ////destinationPath / fs::path("/");
 
-        if (!sourceFile.is_open() || !destinationFile.is_open()) {
-            throw std::runtime_error("Unable to open files!");
+    //try {
+    //    if (fs::is_directory(sourcePath)) {
+    //        // Создайте каталог назначения
+    //        fs::create_directories(destinationPath);
+
+    //        // Рекурсивное копирование
+    //        for (const auto& entry : fs::directory_iterator(sourcePath)) {
+    //            insert(entry.path(), destinationPath / entry.path().filename());
+    //        }
+    //    }
+    //    else if (fs::is_regular_file(sourcePath)) {
+    //        // Копирование файла
+    //        fs::copy(sourcePath, destinationPath, fs::copy_options::overwrite_existing);
+    //    }
+    //    else {
+    //        std::cerr << "Unsupported file type at " << sourcePath.string() << '\n';
+    //    }
+    //}
+    //catch (fs::filesystem_error& err) {
+    //    std::cerr << "Error while copying: " << err.what() << '\n';
+    //}
+
+    //std::ifstream infile(sourcePath, std::ifstream::binary);
+    //std::ofstream outfile(destinationPath, std::ofstream::binary);
+
+    //// get size of file
+    //infile.seekg(0, infile.end);
+    //long size = infile.tellg();
+    //infile.seekg(0);
+
+    //// allocate memory for file content
+    //char* buffer = new char[size];
+
+    //// read content of infile
+    //infile.read(buffer, size);
+
+    //// write to outfile
+    //outfile.write(buffer, size);
+
+    //// release dynamically-allocated memory
+    //delete[] buffer;
+
+    //outfile.close();
+    //infile.close();
+
+    //std::ifstream is(sourcePath, std::ifstream::binary);
+    //if (is) {
+    //    // get length of file:
+    //    is.seekg(0, is.end);
+    //    int length = is.tellg();
+    //    is.seekg(0, is.beg);
+
+    //    char* buffer = new char[length];
+
+    //    std::cout << "Reading " << length << " characters... ";
+    //    // read data as a block:
+    //    is.read(buffer, length);
+
+    //    if (is)
+    //        std::cout << "all characters read successfully.";
+    //    else
+    //        std::cout << "error: only " << is.gcount() << " could be read";
+    //    is.close();
+
+    //    // ...buffer contains the entire file...
+
+    //    delete[] buffer;
+    //}
+
+
+
+    //std::cout << " _destinationPath " << _destinationPath << std::endl;
+    //std::cout << sourcePath << "--------->" << destinationPath;
+    if (fs::is_directory(sourcePath)) {
+        // Создайте каталог назначения
+        fs::create_directories(fs::path(_destinationPath) / fs::path(sourcePath).filename());
+        //std::cout << " create_directories " << fs::path(_destinationPath) / fs::path(sourcePath).filename() << std::endl;
+
+
+        // Рекурсивное копирование
+        for (const auto& entry : fs::directory_iterator(sourcePath)) {
+            //auto destination = destinationPath / entry.path().filename();
+            //std::cout << " yee " << (_destinationPath / entry.path().filename()).string() << std::endl;
+            insert(entry.path().string(), (_destinationPath / fs::path(sourcePath).filename()).string());
+
         }
-
-        // Установка указателя чтения в начало файла
-        sourceFile.seekg(0, std::ios::beg);
-
-        // Получение размера файла
-        sourceFile.seekg(0, std::ios::end);
-        std::streampos fileSize = sourceFile.tellg();
-        sourceFile.seekg(0, std::ios::beg);
-
-        // Выделение буфера для копирования данных
-        char* buffer = new (std::nothrow) char[fileSize];
-        if (!buffer) {
-            throw std::runtime_error("Memory allocation failed!");
-        }
-
-        // Чтение данных из исходного файла
-        sourceFile.read(buffer, fileSize);
-        if (sourceFile.gcount() != fileSize) {
-            throw std::runtime_error("Error reading from source file!");
-        }
-
-        // Запись данных в целевой файл
-        destinationFile.write(buffer, fileSize);
-        if (!destinationFile) {
-            throw std::runtime_error("Error writing to destination file!");
-        }
-
-        // Освобождение буфера
-        delete[] buffer;
-
-        // Закрытие файлов
-        sourceFile.close();
-        destinationFile.close();
-
-        std::cout << "File copied successfully!" << std::endl;
     }
-    catch (const std::exception& e) {
-        std::cerr << "Exception caught: " << e.what() << std::endl;
+    else if (fs::is_regular_file(sourcePath)) {
+        try {
+            //std::cout << sourcePath << " " << _destinationPath << std::endl;
+            std::ifstream sourceFile(sourcePath, std::ifstream::binary);
+
+            fs::path filename(fs::path(sourcePath).filename());
+            _destinationPath = (fs::path(_destinationPath) / filename).string();
+            //std::string filename = p.filename();
+
+            std::ofstream destinationFile(_destinationPath, std::ofstream::binary);
+
+            if (!sourceFile || !destinationFile) {
+                throw std::runtime_error("Unable to open files!");
+            }
+
+            // Установка указателя чтения в начало файла
+            sourceFile.seekg(0, std::ios::beg);
+
+            // Получение размера файла
+            sourceFile.seekg(0, std::ios::end);
+            std::streampos fileSize = sourceFile.tellg();
+            sourceFile.seekg(0, std::ios::beg);
+
+            // Выделение буфера для копирования данных
+            char* buffer = new (std::nothrow) char[fileSize];
+            if (!buffer) {
+                throw std::runtime_error("Memory allocation failed!");
+            }
+
+            // Чтение данных из исходного файла
+            sourceFile.read(buffer, fileSize);
+            if (sourceFile.gcount() != fileSize) {
+                throw std::runtime_error("Error reading from source file!");
+            }
+
+            // Запись данных в целевой файл
+            destinationFile.write(buffer, fileSize);
+            if (!destinationFile) {
+                throw std::runtime_error("Error writing to destination file!");
+            }
+
+            // Освобождение буфера
+            delete[] buffer;
+
+            // Закрытие файлов
+            sourceFile.close();
+            destinationFile.close();
+
+            std::cout << "Успешно скопированно!" << std::endl;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Exception caught: " << e.what() << std::endl;
+        }
     }
+
+    
 }
 
 
@@ -468,7 +568,12 @@ int main() {
         case 'м': //  вставить
         case 'М': //  вставить
             //if (folders[selectedFolderIndex].name != "..") {
-                insert(CoppyPath.c_str(), (fs::path(destinationPath)).string().c_str());
+                insert(CoppyPath, destinationPath);
+                folders = get_objects(destinationPath);
+                for (auto& folder : folders) {
+                    folder.disp();
+                }
+                //std::cout << CoppyPath.c_str() << "--------->" << (fs::path(destinationPath)).string().c_str();
             //}
             break;
         case 'q': // Для выхода из программы
